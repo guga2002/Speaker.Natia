@@ -18,6 +18,7 @@ using Jandagashvili.speake.DLL.Kontext;
 using System.Diagnostics;
 using System.Drawing.Printing;
 using Jandagashvili.speake.bll.Services;
+using System.Net.Http;
 
 namespace Speaker.leison.Forms
 {
@@ -33,6 +34,41 @@ namespace Speaker.leison.Forms
         private readonly PortCheckAndRefresh refresh;
         private readonly CheckFromWhereItIsCameFrom checksource;
 
+        private string checkweather()
+        {
+            string shedeg = "";
+            int pirveli = 0;
+            int ramodenimesaatis = 0;
+            using (var client = new HttpClient())
+            {
+                var res =  client.GetAsync("https://amindi.ge/ka/city/%E1%83%97%E1%83%91%E1%83%98%E1%83%9A%E1%83%98%E1%83%A1%E1%83%98/").Result;
+
+                var content =  res.Content.ReadAsStringAsync().Result;
+
+                var rej = content.Split(new string[] { "Hourly Forecast", "<div class=\"text-center w-100\">", "<span unit=\"C\">", "</span>°" }, StringSplitOptions.None);
+
+                pirveli = int.Parse(rej[3]);
+                ramodenimesaatis = int.Parse(rej[11]);
+            }
+
+            if(pirveli>=20)
+            {
+                shedeg = $"ამ  დროისათვის საკმაოდ ცხელა,ჰაერის ტემპერატურაა {pirveli} ცელსიუსი. მომდევნო საათებში  ჰაერის ტემპერატურა შეიცვლება {ramodenimesaatis} გრადუსამდე. გამაგრილებელი ჩამირთეთ.";
+            }
+            else if(pirveli>=15)
+            {
+                shedeg = $"გარეთ კარგი ამინდია,ჰაერის ტემპერატურაა {pirveli} ცელსიუსი. მომდევნო  საათებში  ჰაერის ტემპერატურა შეიცვლება {ramodenimesaatis} გრადუსამდე";
+            }
+            else if (pirveli >= 10)
+            {
+                shedeg = $"გარეთ საკმაოდ ცივა,ჰაერის ტემპერატურაა {pirveli} ცელსიუსი. მომდევნო  საათებში  ჰაერის ტემპერატურა შეიცვლება {ramodenimesaatis} გრადუსამდე,";
+            }
+            else if (pirveli<10)
+            {
+                shedeg = $"გარეთ  ცივა ცივა,ჰაერის ტემპერატურაა {pirveli} ცელსიუსი. მომდევნო საათებში  ჰაერის ტემპერატურა შეიცვლება {ramodenimesaatis} გრადუსამდე. ჩამირთეთ გათბობა.";
+            }
+            return shedeg;
+        }
         private void PrintPage(object sender, PrintPageEventArgs e)
         {
             using (var audioFile = new AudioFileReader($"C:\\Users\\marjanishvili\\source\\repos\\Speaker.Natia.Jandagovna\\Sounds\\daweva.mp3"))
@@ -70,7 +106,7 @@ namespace Speaker.leison.Forms
             InitializeComponent();
         }
 
-        private   void Main_Load(object sender, EventArgs e)
+        private  void Main_Load(object sender, EventArgs e)
         {
             var listsongs = new List<string>()
             {
@@ -159,9 +195,9 @@ namespace Speaker.leison.Forms
 
                                 while (outputDevice.PlaybackState == PlaybackState.Playing)
                                 {
-                                    // Wait for playback to finish
                                     System.Threading.Thread.Sleep(100);
                                 }
+                                makeSound.SpeakNow(checkweather(), -1);
                             }
 
                                 //makeSound.SpeakNow("ყურადღება,გადავდივარ დღის რეჟიმზე",3);
@@ -310,6 +346,7 @@ namespace Speaker.leison.Forms
                                                 System.Threading.Thread.Sleep(100);
                                             }
                                         }
+                                        makeSound.SpeakNow(checkweather(), -1);
                                         defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = 0.8f;
                                     }
                                     else
@@ -331,6 +368,7 @@ namespace Speaker.leison.Forms
                                                 System.Threading.Thread.Sleep(100);
                                             }
                                         }
+                                        makeSound.SpeakNow(checkweather(), -1);
                                         defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = 0.8f;
                                     }
                                     else
@@ -352,6 +390,7 @@ namespace Speaker.leison.Forms
                                                 System.Threading.Thread.Sleep(100);
                                             }
                                         }
+                                        makeSound.SpeakNow(checkweather(), -1);
                                         defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = 0.8f;
                                     }
                                     else
@@ -373,6 +412,7 @@ namespace Speaker.leison.Forms
                                                 System.Threading.Thread.Sleep(100);
                                             }
                                         }
+                                        makeSound.SpeakNow(checkweather(), -1);
                                         defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = 0.8f;
                                     }
 
@@ -720,7 +760,7 @@ namespace Speaker.leison.Forms
                                     }
                                     if (portparsed == 555)
                                     {
-                                        makeSound.SpeakNow("თელავში, გაითიშა სარელეო სადგური, რეზერვი. გთხოვ გადაამოწმო ან შეატყობინე, შესაბამის პირს.",2);
+                                       // makeSound.SpeakNow("თელავში, გაითიშა სარელეო სადგური, რეზერვი. გთხოვ გადაამოწმო ან შეატყობინე, შესაბამის პირს.",2);
                                     }
                                     if (portparsed == 666)
                                     {
@@ -780,26 +820,26 @@ namespace Speaker.leison.Forms
                         waveOutDevice.Play();
 
                     }));
-                //audioFileReader.Dispose();
-                // waveOutDevice.Dispose();
                 th1.Start();
                 Thread.Sleep(2000);
-                //waveOutDevice.Stop();
                 makeSound.SpeakNow("საშინლად გაბრაზებული ვარ. მჭირდება რელაქსაცია.",2);
-                Thread Gabrazda = new Thread(new ThreadStart(
-                 () =>
-                 {
-                     Random random = new Random();
-                     int ran = random.Next(3, 34);
-                     IWavePlayer waveOutDevice = new WaveOut();
-                     AudioFileReader audioFileReader = new AudioFileReader($"C:\\Users\\musics\\{ran}.mp3");
-                     waveOutDevice.Init(audioFileReader);
-                     waveOutDevice.Play();
-                 })
-                  );
-               // Gabrazda.Start();
-                //Thread.Sleep(500);
 
+                Random random = new Random();
+                int ran = random.Next(3, 34);
+                using (var audioFile = new AudioFileReader($"C:\\Users\\musics\\{ran}.mp3"))
+
+                using (var outputDevice = new WaveOutEvent())
+                {
+                    outputDevice.Init(audioFile);
+                    outputDevice.Play();
+
+                    while (outputDevice.PlaybackState == PlaybackState.Playing)
+                    {
+                        System.Threading.Thread.Sleep(100);
+                    }
+              
+                }
+                makeSound.SpeakNow(checkweather(), -1);
             }
             Console.WriteLine( port);
             var chan = channels.GetChanellByPort(port);
